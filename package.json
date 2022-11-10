@@ -1,0 +1,26 @@
+{
+  "name": "vap-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start",
+    "post-update": "yarn upgrade --latest"
+  },
+  "dependencies": {
+    "@chakra-ui/icons": "^2.0.11",
+    "@chakra-ui/react": "^2.3.7",
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "framer-motion": "^7.6.5",
+    "next": "^13.0.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.6.0",
+    "recharts": "^2.1.16",
+    "wavesurfer.js": "^6.4.0"
+  },
+  "license": "MIT",
+  "keywords": [],
+  "description": ""
+}
