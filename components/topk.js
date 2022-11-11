@@ -14,41 +14,39 @@ import {
 } from 'recharts';
 import { idx2oh } from './idxToOnehot.js';
 
-const topkProbsChart = (props, height) => {
-  if (!(props.topk && props.topkP)) {
+// Projection window
+const step = [0.2, 0.6, 1.2, 2];
+const nStep = [2, 4, 6, 8];
+
+const topkProbsChart = (topk, topkP, height) => {
+  if (!(topk && topkP)) {
     return;
   }
-
   const margin = { top: 5, right: 5, left: 5, bottom: 5 };
   const padding = { top: 5, right: 5, left: 5, bottom: 5 };
 
   let data = [];
-  for (let ii = 0; ii < props.topk.length; ii++) {
+  for (let ii = 0; ii < topk.length; ii++) {
     data.push({
-      name: props.topk[ii].toString(),
-      y: Number((props.topkP[ii] * 100).toFixed(1)),
+      name: topk[ii].toString(),
+      y: Number((topkP[ii] * 100).toFixed(1)),
     });
   }
 
-  const ret = (
+  return (
     <ResponsiveContainer height={height} width="100%">
       <BarChart layout="vertical" data={data} margin={margin} padding={padding}>
         <XAxis dataKey="y" type="number" domain={[0, 100]} reversed={true} />
         <YAxis dataKey="name" type="category" orientation="right" />
-        <Tooltip />
         <CartesianGrid stroke="#f5f5f5" />
         <Bar type="monotone" dataKey="y" fill="#E43828" />
       </BarChart>
     </ResponsiveContainer>
   );
-  return ret;
 };
 
-const topkSampleChart = (oneHot, key, height) => {
-  const pMar = 2;
-  const margin = { top: pMar, right: pMar, left: pMar, bottom: pMar };
-  const step = [0.2, 0.6, 1.2, 2];
-  const nStep = [2, 4, 6, 8];
+const topkSampleChart = (oneHot, key, h = 50, m = 2) => {
+  const margin = { top: m, right: m, left: m, bottom: m };
 
   let data = [];
   for (let ii = 0; ii < oneHot[0].length; ii++) {
@@ -62,7 +60,7 @@ const topkSampleChart = (oneHot, key, height) => {
   }
 
   return (
-    <ResponsiveContainer height={height} key={key}>
+    <ResponsiveContainer height={h} key={key}>
       <AreaChart
         margin={margin}
         data={data}
@@ -90,13 +88,12 @@ const topkSampleChart = (oneHot, key, height) => {
         <ReferenceLine x={6} stroke="#000" strokeWidth={2} />
         <ReferenceLine x={12} stroke="#000" strokeWidth={2} />
         <ReferenceLine x={19} stroke="#000" strokeWidth={2} />
-        <Tooltip />
       </AreaChart>
     </ResponsiveContainer>
   );
 };
 
-const TopkWindowCharts = (topk, height) => {
+const TopkWindowCharts = (topk, height, margin = 2) => {
   if (!topk) {
     return;
   }
@@ -104,16 +101,19 @@ const TopkWindowCharts = (topk, height) => {
   let samples = [];
   for (let ii = 0; ii < topk.length; ii++) {
     let onehot = idx2oh[topk[ii]];
-    samples.push(topkSampleChart(onehot, ii, height));
+    samples.push(topkSampleChart(onehot, ii, height, margin));
   }
   return samples;
 };
 
 export default function Topk(props) {
   const chartH = 50;
-  let chartHeight = props.topk ? (props.topk.length + 1) * chartH : chartH * 10;
-  let topkProbs = topkProbsChart(props, chartHeight);
-  let topkProjWin = TopkWindowCharts(props.topk, 50);
+  const chartHeight = props.topk
+    ? (props.topk.length + 1) * chartH
+    : chartH * 10;
+
+  let topkProbs = topkProbsChart(props.topk, props.topkP, chartHeight);
+  let topkProjWin = TopkWindowCharts(props.topk, chartH);
 
   return (
     <SimpleGrid

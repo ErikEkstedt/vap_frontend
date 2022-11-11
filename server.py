@@ -59,6 +59,13 @@ def read_data(path):
 def api(path):
     filename = flask.request.args.get("filename")
 
+    filename, k = filename.split("-")
+    k = int(k.replace("topk=", ""))
+    # k = flask.request.args.get("k")
+    print(flask.request.args)
+    print("filename: ", filename)
+    print("k: ", k)
+
     if path.lower() == "audio":
         wav_path = join(root, filename + ".wav")
         if exists(wav_path):
@@ -81,7 +88,7 @@ def api(path):
 
             # # Topk
             probs = torch.tensor(d["probs"])
-            tk = probs.topk(k=TOPK)
+            tk = probs.topk(k=k)
             topk, topk_p = tk.indices, tk.values
 
             return {

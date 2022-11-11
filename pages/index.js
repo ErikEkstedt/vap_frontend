@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import VAP from '../components/vap_class';
+import VAP from '../components/vapWavesurferClass';
 
 import { Box, Container, Flex, Heading } from '@chakra-ui/react';
 import { Select } from '@chakra-ui/react';
@@ -20,6 +20,7 @@ export default function IndexPage() {
   const [urls, setURLS] = useState({});
   const [curFile, setCurFile] = useState('');
   const [vap, setVAP] = useState(null);
+  const [maxTopk, setMaxTopK] = useState(10);
 
   // Possible files
   useEffect(() => {
@@ -49,8 +50,8 @@ export default function IndexPage() {
 
   const getURLs = (filename) => {
     return {
-      audioURL: audioAPI + '?filename=' + filename,
-      dataURL: outputAPI + '?filename=' + filename,
+      audioURL: audioAPI + '?filename=' + filename + '-topk=' + maxTopk,
+      dataURL: outputAPI + '?filename=' + filename + '-topk=' + maxTopk,
     };
   };
 
@@ -65,6 +66,7 @@ export default function IndexPage() {
         audioURL={paths.audioURL}
         dataURL={paths.dataURL}
         filename={filename}
+        maxTopk={maxTopk}
         key={filename}
       />
     );

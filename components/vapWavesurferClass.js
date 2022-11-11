@@ -1,6 +1,18 @@
 import React from 'react';
-import { Box, Button, Container, Flex, Heading, Icon } from '@chakra-ui/react';
+import { Box, Button, Flex, Icon } from '@chakra-ui/react';
 import { FaPlay, FaPause, FaStepForward, FaStepBackward } from 'react-icons/fa';
+import {
+  Text,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  NumberIncrementStepper,
+  NumberDecrementStepper,
+} from '@chakra-ui/react';
+
+import { SimpleGrid } from '@chakra-ui/react';
+import { Switch } from '@chakra-ui/react';
+import { Radio, RadioGroup, Stack } from '@chakra-ui/react';
 
 import ArrayPlugin from './arrayPlugin.js';
 import Topk from './topk.js';
@@ -58,22 +70,59 @@ const formWaveSurferOptions = (props) => ({
 const Controls = (props) => {
   return (
     <Box
+      columns={2}
       m={2}
-      p={2}
+      p={1}
       border="1px"
       borderColor="gray.20"
       borderRadius={10}
       align="center"
     >
-      <Button onClick={props.goStart}>
-        <Icon as={FaStepBackward} />
-      </Button>
-      <Button onClick={props.togglePlay}>
-        {!props.playing ? <Icon as={FaPlay} /> : <Icon as={FaPause} />}
-      </Button>
-      <Button onClick={props.goEnd}>
-        <Icon as={FaStepForward} />
-      </Button>
+      <SimpleGrid columns={3}>
+        <SimpleGrid columns={2}>
+          <Box>
+            <Stack align="center" direction="column">
+              <Text fontSize="sm"> Aggregate </Text>
+              <Switch id="aggregate" isDisabled />
+            </Stack>
+          </Box>
+
+          <Box>
+            <Stack align="center" direction="column">
+              <Text fontSize="sm"> BC </Text>
+              <Switch id="bc" isDisabled />
+            </Stack>
+          </Box>
+        </SimpleGrid>
+        <Flex>
+          <Box m="auto">
+            <Button onClick={props.goStart}>
+              <Icon as={FaStepBackward} />
+            </Button>
+            <Button onClick={props.togglePlay}>
+              {!props.playing ? <Icon as={FaPlay} /> : <Icon as={FaPause} />}
+            </Button>
+            <Button onClick={props.goEnd}>
+              <Icon as={FaStepForward} />
+            </Button>
+          </Box>
+
+          <Box>
+            <Stack align="center" m={1} direction="column">
+              <Text fontSize="sm"> Topk </Text>
+              <RadioGroup
+                onChange={props.setNTopk}
+                value={props.nTopk.toString()}
+              >
+                <Stack direction="row">
+                  <Radio value="5">5</Radio>
+                  <Radio value="10">10</Radio>
+                </Stack>
+              </RadioGroup>
+            </Stack>
+          </Box>
+        </Flex>
+      </SimpleGrid>
     </Box>
   );
 };
@@ -93,6 +142,8 @@ class VAP extends React.Component {
         nsA: 'nsA',
         nsB: 'nsB',
       },
+      maxTopk: props.maxTopk,
+      nTopk: 5,
       dim: { waveform: 100, minimap: 50, p_ns: 100 },
       data: {},
       topk: null,
@@ -107,8 +158,16 @@ class VAP extends React.Component {
   }
 
   componentDidMount() {
+    console.log('Mount VAP');
     this.initWavesurfer();
     this.initData();
+  }
+
+  componentWillUnmount() {
+    console.log('UnMount VAP');
+    if (this.wavesurfer) {
+      this.wavesurfer.destroy();
+    }
   }
 
   async initWavesurfer() {
@@ -131,18 +190,18 @@ class VAP extends React.Component {
       });
       options.plugins = [
         RegionPlugin.create(),
-        MinimapPlugin.create({
-          container: '#' + this.state.id.minimap,
-          height: 50,
-          showRegions: true,
-          cursorWidth: 2,
-        }),
+        /* MinimapPlugin.create({ */
+        /*   container: '#' + this.state.id.minimap, */
+        /*   height: 50, */
+        /*   showRegions: true, */
+        /*   cursorWidth: 2, */
+        /* }), */
         TimelinePlugin.create({ container: '#' + this.state.id.timeline }),
       ];
       this.wavesurfer = WaveSurfer.create(options);
       this.wavesurfer.load(this.state.audioURL);
       this.wavesurfer.zoom(this.state.zoom);
-      /* this.wavesurfer.on('seek', this.handleUpdateTopk) */
+      this.wavesurfer.on('seek', this.setCurrentTopK);
       this.wavesurfer.on('audioprocess', this._onAudioprocess);
     }
   }
@@ -159,8 +218,8 @@ class VAP extends React.Component {
         this.setState({
           topk: data.topk,
           topkP: data.topk_p,
-          topkCurrent: data.topk[0],
-          topkPCurrent: data.topk_p[0],
+          topkCurrent: data.topk[0].slice(0, this.state.nTopk),
+          topkPCurrent: data.topk_p[0].slice(0, this.state.nTopk),
         });
         this.initVad(data.vad_list);
         this.initNextSpeakerProbs(data);
@@ -231,8 +290,8 @@ class VAP extends React.Component {
     const r = this.wavesurfer.backend.getPlayedPercents();
     let idx = (r * this.state.topk.length).toFixed(0);
     this.setState({
-      topkCurrent: this.state.topk[idx],
-      topkPCurrent: this.state.topkP[idx],
+      topkCurrent: this.state.topk[idx].slice(0, this.state.nTopk),
+      topkPCurrent: this.state.topkP[idx].slice(0, this.state.nTopk),
     });
   };
 
@@ -263,6 +322,13 @@ class VAP extends React.Component {
           <div id={this.state.id.timeline} />
         </Box>
         <Controls
+          maxTopk={this.state.maxTopk}
+          nTopk={this.state.nTopk}
+          setNTopk={(e) => {
+            console.log('over topk: ' + e);
+            this.setState({ nTopk: e });
+            this.setCurrentTopK();
+          }}
           playing={this.state.playing}
           togglePlay={() => {
             this.setState({ playing: !this.state.playing });
