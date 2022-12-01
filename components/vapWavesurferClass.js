@@ -68,9 +68,85 @@ const formWaveSurferOptions = (props) => ({
 });
 
 const Controls = (props) => {
+  // Switches
+  // props.
+  // props.togglePlay
+  // props.goEnd
+  //
+  // PlayBtns
+  // props.goStart
+  // props.togglePlay
+  // props.goEnd
+
+  let switches = (
+    // Radio-buttons to change what prediction data is shown in
+    // the visualization.
+    <SimpleGrid columns={2} border="1px" borderColor="white">
+      <Stack align="center" m={1} direction="column">
+        <Text fontSize="sm"> P-now </Text>
+        <Switch
+          onChange={() => {
+            props.setShowPNow();
+          }}
+          defaultChecked
+          id="p_now"
+        />
+      </Stack>
+      <Stack align="center" m={1} direction="column">
+        <Text fontSize="sm"> P-future </Text>
+        <Switch
+          onChange={() => {
+            props.setShowPFuture();
+          }}
+          defaultChecked
+          id="p_future"
+        />
+
+        <Text fontSize="sm"> BC </Text>
+        <Switch
+          onChange={() => {
+            props.setShowBC();
+          }}
+          value={props.showBC}
+          id="bc"
+        />
+      </Stack>
+    </SimpleGrid>
+  );
+
+  let topK = (
+    <SimpleGrid columns={2} border="1px" borderColor="white">
+      <Stack align="center" m={1} direction="column">
+        <RadioGroup onChange={props.setNTopk} value={props.nTopk.toString()}>
+          <Stack>
+            <Text fontSize="m"> Topk </Text>
+            <Radio value="0">Hide</Radio>
+            <Radio value="5">5</Radio>
+            <Radio value="10">10</Radio>
+          </Stack>
+        </RadioGroup>
+      </Stack>
+    </SimpleGrid>
+  );
+
+  let playBtns = (
+    <Flex border="1px" borderColor="white">
+      <Box m="auto">
+        <Button onClick={props.goStart}>
+          <Icon as={FaStepBackward} />
+        </Button>
+        <Button onClick={props.togglePlay}>
+          {!props.playing ? <Icon as={FaPlay} /> : <Icon as={FaPause} />}
+        </Button>
+        <Button onClick={props.goEnd}>
+          <Icon as={FaStepForward} />
+        </Button>
+      </Box>
+    </Flex>
+  );
+
   return (
     <Box
-      columns={2}
       m={2}
       p={1}
       border="1px"
@@ -79,49 +155,10 @@ const Controls = (props) => {
       align="center"
     >
       <SimpleGrid columns={3}>
-        <SimpleGrid columns={2}>
-          <Box>
-            <Stack align="center" direction="column">
-              <Text fontSize="sm"> Aggregate </Text>
-              <Switch id="aggregate" isDisabled />
-            </Stack>
-          </Box>
-
-          <Box>
-            <Stack align="center" direction="column">
-              <Text fontSize="sm"> BC </Text>
-              <Switch id="bc" isDisabled />
-            </Stack>
-          </Box>
-        </SimpleGrid>
-        <Flex>
-          <Box m="auto">
-            <Button onClick={props.goStart}>
-              <Icon as={FaStepBackward} />
-            </Button>
-            <Button onClick={props.togglePlay}>
-              {!props.playing ? <Icon as={FaPlay} /> : <Icon as={FaPause} />}
-            </Button>
-            <Button onClick={props.goEnd}>
-              <Icon as={FaStepForward} />
-            </Button>
-          </Box>
-
-          <Box>
-            <Stack align="center" m={1} direction="column">
-              <Text fontSize="sm"> Topk </Text>
-              <RadioGroup
-                onChange={props.setNTopk}
-                value={props.nTopk.toString()}
-              >
-                <Stack direction="row">
-                  <Radio value="5">5</Radio>
-                  <Radio value="10">10</Radio>
-                </Stack>
-              </RadioGroup>
-            </Stack>
-          </Box>
-        </Flex>
+        {switches}
+        {playBtns}
+        {topK}
+        <Box />
       </SimpleGrid>
     </Box>
   );
@@ -135,30 +172,36 @@ class VAP extends React.Component {
       dataURL: props.dataURL,
       filename: props.filename,
       wavesurfer: null,
+      controls: {
+        playing: false,
+        maxTopk: props.maxTopk,
+        nTopk: 0,
+        showPNow: true,
+        showPFuture: true,
+        showTopk: false,
+      },
       id: {
         wavesurfer: 'wavesurfer',
         timeline: 'timeline',
-        minimap: 'minimap',
-        nsA: 'nsA',
-        nsB: 'nsB',
+        pnA: 'pnA',
+        pnB: 'pnB',
+        pfA: 'pfA',
+        pfB: 'pfB',
       },
-      maxTopk: props.maxTopk,
-      nTopk: 5,
-      dim: { waveform: 100, minimap: 50, p_ns: 100 },
+      dim: { waveform: 100, p: 100 },
       data: {},
       topk: null,
       topkP: null,
       topkCurrent: null,
       topkPCurrent: null,
-      playing: false,
-      zoom: 100,
+      zoom: 120,
       n_probs: 0,
     };
     console.log('VAP constructor');
   }
 
   componentDidMount() {
-    console.log('Mount VAP');
+    /* console.log('Mount VAP'); */
     this.initWavesurfer();
     this.initData();
   }
@@ -175,9 +218,6 @@ class VAP extends React.Component {
     const RegionPlugin = (
       await import('wavesurfer.js/dist/plugin/wavesurfer.regions.min.js')
     ).default;
-    const MinimapPlugin = (
-      await import('wavesurfer.js/dist/plugin/wavesurfer.minimap.min.js')
-    ).default;
     const TimelinePlugin = (
       await import('wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js')
     ).default;
@@ -190,12 +230,6 @@ class VAP extends React.Component {
       });
       options.plugins = [
         RegionPlugin.create(),
-        /* MinimapPlugin.create({ */
-        /*   container: '#' + this.state.id.minimap, */
-        /*   height: 50, */
-        /*   showRegions: true, */
-        /*   cursorWidth: 2, */
-        /* }), */
         TimelinePlugin.create({ container: '#' + this.state.id.timeline }),
       ];
       this.wavesurfer = WaveSurfer.create(options);
@@ -218,8 +252,8 @@ class VAP extends React.Component {
         this.setState({
           topk: data.topk,
           topkP: data.topk_p,
-          topkCurrent: data.topk[0].slice(0, this.state.nTopk),
-          topkPCurrent: data.topk_p[0].slice(0, this.state.nTopk),
+          topkCurrent: data.topk[0].slice(0, this.state.controls.nTopk),
+          topkPCurrent: data.topk_p[0].slice(0, this.state.controls.nTopk),
         });
         this.initVad(data.vad_list);
         this.initNextSpeakerProbs(data);
@@ -244,13 +278,14 @@ class VAP extends React.Component {
   }
 
   async initNextSpeakerProbs(data) {
-    this.setState({ n_probs: data.p_ns_a.length });
+    this.setState({ n_probs: data.p_now_a.length });
     var plugins = [
+      // P-now
       ArrayPlugin.create({
-        name: this.state.id.nsA,
-        container: '#' + this.state.id.nsA,
-        probs: data.p_ns_a,
-        height: this.state.dim.p_ns,
+        name: this.state.id.pnA,
+        container: '#' + this.state.id.pnA,
+        probs: data.p_now_a,
+        height: this.state.dim.p,
         barWidth: false,
         splitChannels: false,
         splitChannelsOptions: {
@@ -263,10 +298,42 @@ class VAP extends React.Component {
         },
       }),
       ArrayPlugin.create({
-        name: this.state.id.nsB,
-        container: '#' + this.state.id.nsB,
-        probs: data.p_ns_b,
-        height: this.state.dim.p_ns,
+        name: this.state.id.pnB,
+        container: '#' + this.state.id.pnB,
+        probs: data.p_now_b,
+        height: this.state.dim.p,
+        barWidth: false,
+        splitChannels: false,
+        splitChannelsOptions: {
+          channelColors: {
+            0: {
+              progressColor: colors.prog.ts_b,
+              waveColor: colors.wave.ts_b,
+            },
+          },
+        },
+      }),
+      ArrayPlugin.create({
+        name: this.state.id.pfA,
+        container: '#' + this.state.id.pfA,
+        probs: data.p_future_a,
+        height: this.state.dim.p,
+        barWidth: false,
+        splitChannels: false,
+        splitChannelsOptions: {
+          channelColors: {
+            0: {
+              progressColor: colors.prog.ts_a,
+              waveColor: colors.wave.ts_a,
+            },
+          },
+        },
+      }),
+      ArrayPlugin.create({
+        name: this.state.id.pfB,
+        container: '#' + this.state.id.pfB,
+        probs: data.p_future_b,
+        height: this.state.dim.p,
         barWidth: false,
         splitChannels: false,
         splitChannelsOptions: {
@@ -290,48 +357,132 @@ class VAP extends React.Component {
     const r = this.wavesurfer.backend.getPlayedPercents();
     let idx = (r * this.state.topk.length).toFixed(0);
     this.setState({
-      topkCurrent: this.state.topk[idx].slice(0, this.state.nTopk),
-      topkPCurrent: this.state.topkP[idx].slice(0, this.state.nTopk),
+      topkCurrent: this.state.topk[idx].slice(0, this.state.controls.nTopk),
+      topkPCurrent: this.state.topkP[idx].slice(0, this.state.controls.nTopk),
     });
   };
 
   render() {
-    return (
-      <Box>
-        <Box bg="white" m={2} p={1} border="1px" borderRadius={10}>
-          <Box
-            mb={1}
-            border="1px"
-            borderColor="black"
-            id={this.state.id.minimap}
-          />
-          <Box border="1px" borderColor="black" id={this.state.id.wavesurfer} />
+    let pNow = null;
+    if (this.state.controls.showPNow) {
+      if (this.state.pNow === undefined) {
+        pNow = (
           <Box border="1px" borderColor="black" mt={1} pt={1} pb={1}>
             <Box
               overflow="hidden"
-              h={this.state.dim.p_ns / 2}
-              id={this.state.id.nsA}
+              h={this.state.dim.p / 2}
+              id={this.state.id.pnA}
             />
             <Box
               overflow="hidden"
               transform="scaleY(-1)"
-              h={this.state.dim.p_ns / 2}
-              id={this.state.id.nsB}
+              h={this.state.dim.p / 2}
+              id={this.state.id.pnB}
             />
           </Box>
+        );
+        this.setState({
+          pNow: pNow,
+        });
+      } else {
+        pNow = this.state.pNow;
+      }
+    }
+
+    let pFuture = null;
+    if (this.state.controls.showPFuture) {
+      if (this.state.pFuture === undefined) {
+        pFuture = (
+          <Box border="1px" borderColor="black" mt={1} pt={1} pb={1}>
+            <Box
+              overflow="hidden"
+              h={this.state.dim.p / 2}
+              id={this.state.id.pfA}
+            />
+            <Box
+              overflow="hidden"
+              transform="scaleY(-1)"
+              h={this.state.dim.p / 2}
+              id={this.state.id.pfB}
+            />
+          </Box>
+        );
+        this.setState({
+          pFuture: pFuture,
+        });
+      } else {
+        pFuture = this.state.pFuture;
+      }
+    }
+
+    let topK = null;
+    if (this.state.controls.showTopk) {
+      topK = (
+        <Topk topk={this.state.topkCurrent} topkP={this.state.topkPCurrent} />
+      );
+    }
+
+    return (
+      <Box>
+        <Box bg="white" m={2} p={1} border="1px" borderRadius={10}>
           <div id={this.state.id.timeline} />
+          <Box border="1px" borderColor="black" id={this.state.id.wavesurfer} />
+          {pNow}
+          {pFuture}
         </Box>
+
         <Controls
-          maxTopk={this.state.maxTopk}
-          nTopk={this.state.nTopk}
+          setShowPNow={() => {
+            this.setState({
+              controls: {
+                ...this.state.controls,
+                showPNow: !this.state.controls.showPNow,
+              },
+            });
+          }}
+          setShowPFuture={() => {
+            this.setState({
+              controls: {
+                ...this.state.controls,
+                showPFuture: !this.state.controls.showPFuture,
+              },
+            });
+          }}
+          setShowBC={() => {
+            alert('Toggle backchannel (BC) not yet implemented');
+            this.setState({
+              controls: {
+                ...this.state.controls,
+                showBC: !this.state.controls.showBC,
+              },
+            });
+          }}
+          // topK
+          maxTopk={this.state.controls.maxTopk}
+          nTopk={this.state.controls.nTopk}
           setNTopk={(e) => {
-            console.log('over topk: ' + e);
-            this.setState({ nTopk: e });
+            let showTopk = false;
+            if (e > 0) {
+              showTopk = true;
+            }
+            this.setState({
+              controls: {
+                ...this.state.controls,
+                nTopk: e,
+                showTopk: showTopk,
+              },
+            });
             this.setCurrentTopK();
           }}
-          playing={this.state.playing}
+          // playBTNs
+          playing={this.state.controls.playing}
           togglePlay={() => {
-            this.setState({ playing: !this.state.playing });
+            this.setState({
+              controls: {
+                ...this.state.controls,
+                playing: !this.state.controls.playing,
+              },
+            });
             this.wavesurfer.playPause();
           }}
           goStart={() => {
@@ -341,7 +492,7 @@ class VAP extends React.Component {
             this.wavesurfer.seekAndCenter(1);
           }}
         />
-        <Topk topk={this.state.topkCurrent} topkP={this.state.topkPCurrent} />
+        {topK}
       </Box>
     );
   }

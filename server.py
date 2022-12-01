@@ -25,34 +25,51 @@ def write_json(data, filename):
         json.dump(data, jsonfile, ensure_ascii=False)
 
 
-def scale_speaker_probs(p):
-    # Normalize to show > 50 %
-    p = 2 * p - 1  # [0, 1] -> [0, 2] -> [-1, 1]
-    p[p < 0] = 0  # only use probs > 0.5
-    return p
+def load_and_prepare_output(path, k=10):
+    """
+    her_output.json
+    ---------------
+    probs: (1, 8243, 256), <class 'torch.Tensor'>
+    vad: (1, 8243, 2), <class 'torch.Tensor'>
+    p_bc: (1, 8243, 2), <class 'torch.Tensor'>
+    p_now: (1, 8243, 2), <class 'torch.Tensor'>
+    p_future: (1, 8243, 2), <class 'torch.Tensor'>
+    H: (1, 8243), <class 'torch.Tensor'>
+    vad_list: 2, <class 'list'>
+    """
 
+    def scale_speaker_probs(p):
+        # Normalize to show > 50 %
+        p = 2 * p - 1  # [0, 1] -> [0, 2] -> [-1, 1]
+        p[p < 0] = 0  # only use probs > 0.5
+        return p
 
-def read_data(path):
     d = read_json(path)
-    p = np.array(d["p"][0])
-    p_bc = np.array(d["p_bc"][0])
-    p = scale_speaker_probs(p)
+    for kk, v in d.items():
+        if kk == "vad_list":
+            continue
 
-    # Topk
-    probs = torch.tensor(d["probs"][0])
-    tk = probs.topk(k=TOPK)
+        if kk == "probs":
+            d[kk] = torch.tensor(v)
+        else:
+            d[kk] = np.array(v)
+
+    n = 2
+    pn = d["p_now"][0, ::n, 0]
+    pf = d["p_future"][0, ::n, 0]
+    tk = d["probs"][0, ::n].topk(k=k)
     topk, topk_p = tk.indices, tk.values
-
-    data = {
-        "vad": d["va"],
-        "probs_ns_a": p[:, 0].tolist(),
-        "probs_ns_b": p[:, 1].tolist(),
-        "probs_bc_a": p_bc[:, 0].tolist(),
-        "probs_bc_b": p_bc[:, 1].tolist(),
+    return {
+        "vad_list": d["vad_list"],
+        "p_now_a": scale_speaker_probs(pn).tolist(),
+        "p_now_b": scale_speaker_probs(1 - pn).tolist(),
+        "p_future_a": scale_speaker_probs(pf).tolist(),
+        "p_future_b": scale_speaker_probs(1 - pf).tolist(),
+        "p_bc_a": d["p_bc"][0, ::n, 0].tolist(),
+        "p_bc_b": d["p_bc"][0, ::n, 1].tolist(),
         "topk": topk.tolist(),
         "topk_p": topk_p.tolist(),
     }
-    return data
 
 
 @app.route("/<path>")
@@ -61,7 +78,6 @@ def api(path):
 
     filename, k = filename.split("-")
     k = int(k.replace("topk=", ""))
-    # k = flask.request.args.get("k")
     print(flask.request.args)
     print("filename: ", filename)
     print("k: ", k)
@@ -76,30 +92,7 @@ def api(path):
     elif path == "output":
         data_path = join(root, filename + ".json")
         if exists(data_path):
-            d = read_json(data_path)
-            p_bc_a = np.array(d["p_bc_a"])
-            p_bc_b = np.array(d["p_bc_b"])
-
-            print(d.keys())
-
-            p = np.array(d["p"])
-            print("p: ", tuple(p.shape))
-            # p = scale_speaker_probs(p)
-
-            # # Topk
-            probs = torch.tensor(d["probs"])
-            tk = probs.topk(k=k)
-            topk, topk_p = tk.indices, tk.values
-
-            return {
-                "vad_list": d["vad_list"],
-                "p_ns_a": scale_speaker_probs(p).tolist(),
-                "p_ns_b": scale_speaker_probs(1 - p).tolist(),
-                "p_bc_a": p_bc_a.tolist(),
-                "p_bc_b": p_bc_b.tolist(),
-                "topk": topk.tolist(),
-                "topk_p": topk_p.tolist(),
-            }
+            return load_and_prepare_output(data_path, k=10)
         else:
             return f"Audio file {data_path} does not exist!"
 
