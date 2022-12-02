@@ -17,15 +17,6 @@ import { Radio, RadioGroup, Stack } from '@chakra-ui/react';
 import ArrayPlugin from './arrayPlugin.js';
 import Topk from './topk.js';
 
-/*
-
-* Why is next so slow to serve data?
-
-API response for /api/output?filename=session_1_baseline exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
-API response for /api/audio?filename=session_1_baseline exceeds 4MB. API Routes are meant to respond quickly. https://nextjs.org/docs/messages/api-routes-response-size-limit
-
-
-*/
 // Colors
 const colors = {
   wave: {
@@ -44,14 +35,13 @@ const colors = {
     bc_a: '#459C0D',
     bc_b: '#0C4A05',
   },
+  cursor: 'OrangeRed',
 };
 
 const formWaveSurferOptions = (props) => ({
   container: props.ref,
   autoCenter: true,
-  waveColor: '#eee',
-  progressColor: '#0178FF',
-  cursorColor: 'OrangeRed',
+  cursorColor: colors.cursor,
   barWidth: 2,
   barRadius: 2,
   responsive: true,
@@ -183,6 +173,8 @@ class VAP extends React.Component {
       id: {
         wavesurfer: 'wavesurfer',
         timeline: 'timeline',
+        spec: 'spec',
+        h: 'H',
         pnA: 'pnA',
         pnB: 'pnB',
         pfA: 'pfA',
@@ -221,6 +213,9 @@ class VAP extends React.Component {
     const TimelinePlugin = (
       await import('wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js')
     ).default;
+    /* const SpectrogramPlugin = ( */
+    /*   await import('wavesurfer.js/dist/plugin/wavesurfer.spectrogram.min.js') */
+    /* ).default; */
 
     if (!this.wavesurfer) {
       console.log('ID: ' + this.state.id.wavesurfer);
@@ -228,6 +223,16 @@ class VAP extends React.Component {
         ref: '#' + this.state.id.wavesurfer,
         height: this.state.dim.waveform,
       });
+
+      /* let spec = SpectrogramPlugin.create({ */
+      /*   wavesurfer: wavesurfer, */
+      /*   container: '#' + this.state.id.spec, */
+      /*   frequencyMin: 50, */
+      /*   frequencyMax: 8000, */
+      /*   splitChannels: true, */
+      /*   height: 256, */
+      /* }); */
+
       options.plugins = [
         RegionPlugin.create(),
         TimelinePlugin.create({ container: '#' + this.state.id.timeline }),
@@ -279,72 +284,72 @@ class VAP extends React.Component {
 
   async initNextSpeakerProbs(data) {
     this.setState({ n_probs: data.p_now_a.length });
+    let options = {
+      height: this.state.dim.p,
+      barWidth: false,
+      splitChannels: false,
+    };
+
+    let options_a = {
+      splitChannelsOptions: {
+        channelColors: {
+          0: {
+            progressColor: colors.prog.ts_a,
+            waveColor: colors.wave.ts_a,
+          },
+        },
+      },
+    };
+    let options_b = {
+      splitChannelsOptions: {
+        channelColors: {
+          0: {
+            progressColor: colors.prog.ts_b,
+            waveColor: colors.wave.ts_b,
+          },
+        },
+      },
+    };
+
     var plugins = [
       // P-now
       ArrayPlugin.create({
         name: this.state.id.pnA,
         container: '#' + this.state.id.pnA,
         probs: data.p_now_a,
-        height: this.state.dim.p,
-        barWidth: false,
-        splitChannels: false,
-        splitChannelsOptions: {
-          channelColors: {
-            0: {
-              progressColor: colors.prog.ts_a,
-              waveColor: colors.wave.ts_a,
-            },
-          },
-        },
+        ...options,
+        ...options_a,
       }),
       ArrayPlugin.create({
         name: this.state.id.pnB,
         container: '#' + this.state.id.pnB,
         probs: data.p_now_b,
-        height: this.state.dim.p,
-        barWidth: false,
-        splitChannels: false,
-        splitChannelsOptions: {
-          channelColors: {
-            0: {
-              progressColor: colors.prog.ts_b,
-              waveColor: colors.wave.ts_b,
-            },
-          },
-        },
+        ...options,
+        ...options_b,
       }),
+      // P-future
       ArrayPlugin.create({
         name: this.state.id.pfA,
         container: '#' + this.state.id.pfA,
         probs: data.p_future_a,
-        height: this.state.dim.p,
-        barWidth: false,
-        splitChannels: false,
-        splitChannelsOptions: {
-          channelColors: {
-            0: {
-              progressColor: colors.prog.ts_a,
-              waveColor: colors.wave.ts_a,
-            },
-          },
-        },
+        ...options,
+        ...options_a,
       }),
       ArrayPlugin.create({
         name: this.state.id.pfB,
         container: '#' + this.state.id.pfB,
         probs: data.p_future_b,
-        height: this.state.dim.p,
-        barWidth: false,
-        splitChannels: false,
-        splitChannelsOptions: {
-          channelColors: {
-            0: {
-              progressColor: colors.prog.ts_b,
-              waveColor: colors.wave.ts_b,
-            },
-          },
-        },
+        ...options,
+        ...options_b,
       }),
+      /* // Entropy */
+      /* ArrayPlugin.create({ */
+      /*   name: this.state.id.h, */
+      /*   container: '#' + this.state.id.h, */
+      /*   probs: data.H, */
+      /*   waveColor: 'green', */
+      /*   ...options, */
+      /* }), */
     ];
     this.wavesurfer.registerPlugins(plugins);
   }
@@ -414,6 +419,13 @@ class VAP extends React.Component {
         pFuture = this.state.pFuture;
       }
     }
+
+    /* let entropy = null; */
+    /* if (false) { */
+    /*   entropy = ( */
+    /*     <Box overflow="hidden" h={this.state.dim.p / 2} id={this.state.id.h} /> */
+    /*   ); */
+    /* } */
 
     let topK = null;
     if (this.state.controls.showTopk) {

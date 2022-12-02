@@ -53,20 +53,22 @@ def load_and_prepare_output(path, k=10):
             d[kk] = torch.tensor(v)
         else:
             d[kk] = np.array(v)
+        print(kk, d[kk].shape)
 
-    n = 2
+    n = 3
     pn = d["p_now"][0, ::n, 0]
     pf = d["p_future"][0, ::n, 0]
     tk = d["probs"][0, ::n].topk(k=k)
     topk, topk_p = tk.indices, tk.values
     return {
-        "vad_list": d["vad_list"],
+        "vad_list": d["vad_list"][0],
         "p_now_a": scale_speaker_probs(pn).tolist(),
         "p_now_b": scale_speaker_probs(1 - pn).tolist(),
         "p_future_a": scale_speaker_probs(pf).tolist(),
         "p_future_b": scale_speaker_probs(1 - pf).tolist(),
         "p_bc_a": d["p_bc"][0, ::n, 0].tolist(),
         "p_bc_b": d["p_bc"][0, ::n, 1].tolist(),
+        "H": d["H"][0, ::n].tolist(),
         "topk": topk.tolist(),
         "topk_p": topk_p.tolist(),
     }
