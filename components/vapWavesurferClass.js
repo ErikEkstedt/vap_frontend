@@ -58,16 +58,6 @@ const formWaveSurferOptions = (props) => ({
 });
 
 const Controls = (props) => {
-  // Switches
-  // props.
-  // props.togglePlay
-  // props.goEnd
-  //
-  // PlayBtns
-  // props.goStart
-  // props.togglePlay
-  // props.goEnd
-
   let switches = (
     // Radio-buttons to change what prediction data is shown in
     // the visualization.
@@ -121,17 +111,27 @@ const Controls = (props) => {
 
   let playBtns = (
     <Flex border="1px" borderColor="white">
-      <Box m="auto">
-        <Button onClick={props.goStart}>
-          <Icon as={FaStepBackward} />
-        </Button>
-        <Button onClick={props.togglePlay}>
-          {!props.playing ? <Icon as={FaPlay} /> : <Icon as={FaPause} />}
-        </Button>
-        <Button onClick={props.goEnd}>
-          <Icon as={FaStepForward} />
-        </Button>
-      </Box>
+      <SimpleGrid columns={1} rows={2}>
+        <Box m="auto">
+          <Button onClick={props.goStart}>
+            <Icon as={FaStepBackward} />
+          </Button>
+          <Button onClick={props.togglePlay}>
+            {!props.playing ? <Icon as={FaPlay} /> : <Icon as={FaPause} />}
+          </Button>
+          <Button onClick={props.goEnd}>
+            <Icon as={FaStepForward} />
+          </Button>
+        </Box>
+        <Box m="auto" p={2}>
+          <Text fontSize="10">
+            <strong>DATA:</strong> {props.dataURL}
+          </Text>
+          <Text fontSize="10">
+            <strong>AUDIO:</strong> {props.audioURL}
+          </Text>
+        </Box>
+      </SimpleGrid>
     </Flex>
   );
 
@@ -153,6 +153,11 @@ const Controls = (props) => {
     </Box>
   );
 };
+
+// Takes as input
+// audioURL: props.audioURL,
+// dataURL: props.dataURL,
+// filename: props.filename,
 
 class VAP extends React.Component {
   constructor(props) {
@@ -224,7 +229,7 @@ class VAP extends React.Component {
         height: this.state.dim.waveform,
       });
 
-      /* let spec = SpectrogramPlugin.create({ */
+      /* let spec = SpectrogramPlugin.create({ * /
       /*   wavesurfer: wavesurfer, */
       /*   container: '#' + this.state.id.spec, */
       /*   frequencyMin: 50, */
@@ -343,7 +348,7 @@ class VAP extends React.Component {
         ...options_b,
       }),
       /* // Entropy */
-      /* ArrayPlugin.create({ */
+      /* ArrayPlugin.create({ * /
       /*   name: this.state.id.h, */
       /*   container: '#' + this.state.id.h, */
       /*   probs: data.H, */
@@ -421,7 +426,7 @@ class VAP extends React.Component {
     }
 
     /* let entropy = null; */
-    /* if (false) { */
+    /* if (false) { * /
     /*   entropy = ( */
     /*     <Box overflow="hidden" h={this.state.dim.p / 2} id={this.state.id.h} /> */
     /*   ); */
@@ -470,6 +475,9 @@ class VAP extends React.Component {
             });
           }}
           // topK
+          audioURL={this.state.audioURL}
+          dataURL={this.state.dataURL}
+          filename={this.state.filename}
           maxTopk={this.state.controls.maxTopk}
           nTopk={this.state.controls.nTopk}
           setNTopk={(e) => {

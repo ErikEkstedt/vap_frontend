@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
-from os.path import join, exists
+from glob import glob
+from os.path import basename, join, exists
 from os import makedirs, listdir
 import numpy as np
 import torch
@@ -74,6 +75,41 @@ def load_and_prepare_output(path, k=10):
     }
 
 
+def read_vap_files(path):
+
+    paths = []  # {}
+    datapaths = glob(join(path, "*.json"))
+    wavpaths = glob(join(path, "*.wav"))
+
+    datapaths.sort()
+
+    for datapath in datapaths:
+        name = basename(datapath).replace(".json", "")
+        for wpath in wavpaths:
+            if name in wpath:
+                # paths[name] = {"output": datapath, "audio": wpath}
+                paths.append({"name": name, "output": datapath, "audio": wpath})
+
+    # print(len(paths))
+    # for k, v in paths.items():
+    #     print(k)
+    #     print("output: ", v["output"])
+    #     print("audio: ", v["audio"])
+    #     print("-" * 50)
+    return paths
+
+
+@app.route("/files")
+def files():
+    global root
+    files = read_vap_files(root)
+    return json.dumps(files)
+
+
+# TODO: path handling in a normal way with next.js?
+# @app.route("/files")
+# @app.route("/audio")
+# @app.route("/output")
 @app.route("/<path>")
 def api(path):
     filename = flask.request.args.get("filename")
@@ -90,7 +126,9 @@ def api(path):
             return flask.send_file(wav_path)
         else:
             return f"Audio file {wav_path} does not exist!"
-
+    # elif path.lower() == "files":
+    #     files = read_vap_files(root)
+    #     return files
     elif path == "output":
         data_path = join(root, filename + ".json")
         if exists(data_path):

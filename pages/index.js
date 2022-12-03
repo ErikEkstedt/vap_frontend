@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import VAP from '../components/vapWavesurferClass';
 
 import { Box, Container, Flex, Heading } from '@chakra-ui/react';
+
+import { Button } from '@chakra-ui/react';
 import { Select } from '@chakra-ui/react';
 /* import { Menu, MenuButton, MenuList, MenuItem, Button } from '@chakra-ui/react'; */
 /* import { ChevronDownIcon } from '@chakra-ui/icons'; */
@@ -24,7 +26,7 @@ export default function IndexPage() {
 
   // Possible files
   useEffect(() => {
-    fetch('/api/files')
+    fetch('/api/python/files')
       .then((response) => {
         if (response.ok) {
           return response.json();
@@ -33,14 +35,16 @@ export default function IndexPage() {
       })
       .then((files) => {
         setFiles(files);
-        updateVAP(files[0]);
+        updateVAP(files[0].name);
+        console.log('name: ' + files[0].name);
+        setCurFile(files[0].name);
 
         let options = [];
         files.forEach((file) => {
           options.push(
-            <option value={file} key={file}>
+            <option value={file.name} key={file.name}>
               {' '}
-              {file}{' '}
+              {file.name}{' '}
             </option>
           );
         });
