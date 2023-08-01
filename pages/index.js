@@ -17,10 +17,10 @@ const audioAPI = '/api/python/audio';
 const outputAPI = '/api/python/output';
 
 export default function IndexPage() {
-  const [files, setFiles] = useState([]);
-  const [fileOptions, setFileOptions] = useState([]);
+  const [sessionNames, setSessionNames] = useState([]); // list of session names
+  const [sessionSelection, setSessionSelection] = useState([]); // list of <option> elements
+  const [currentSession, setCurrentSession] = useState('');
   const [urls, setURLS] = useState({});
-  const [curFile, setCurFile] = useState('');
   const [vap, setVAP] = useState(null);
   const [maxTopk, setMaxTopK] = useState(10);
 
@@ -33,45 +33,45 @@ export default function IndexPage() {
         }
         throw response;
       })
-      .then((files) => {
-        setFiles(files);
-        updateVAP(files[0].name);
-        console.log('name: ' + files[0].name);
-        setCurFile(files[0].name);
-
+      .then((sessions) => {
+        setSessionNames(sessions);
         let options = [];
-        files.forEach((file) => {
+        sessions.forEach((file) => {
           options.push(
-            <option value={file.name} key={file.name}>
-              {' '}
-              {file.name}{' '}
+            <option value={file} key={file}>
+              {file}
             </option>
           );
         });
-        setFileOptions(options);
+        setSessionSelection(options);
       });
   }, []);
 
-  const getURLs = (filename) => {
+  const getURLs = (session) => {
     return {
-      audioURL: audioAPI + '?filename=' + filename + '-topk=' + maxTopk,
-      dataURL: outputAPI + '?filename=' + filename + '-topk=' + maxTopk,
+      audioURL: audioAPI + '?filename=' + session + '-topk=' + maxTopk,
+      dataURL: outputAPI + '?filename=' + session + '-topk=' + maxTopk,
     };
   };
 
-  const updateVAP = (filename) => {
-    const paths = getURLs(filename);
-    setCurFile(filename);
+  const updateVAP = (session) => {
+    if (session === currentSession) {
+      return;
+    } else if (session === '') {
+      setVAP(null);
+      return;
+    }
+
+    const paths = getURLs(session);
+    setCurrentSession(session);
     setURLS(paths);
-    console.log('Audio: ' + paths.audioURL);
-    console.log('Data: ' + paths.dataURL);
     setVAP(
       <VAP
         audioURL={paths.audioURL}
         dataURL={paths.dataURL}
-        filename={filename}
+        filename={session}
         maxTopk={maxTopk}
-        key={filename}
+        key={session}
       />
     );
   };
@@ -92,12 +92,12 @@ export default function IndexPage() {
             </Heading>
           </Flex>
           <Select
-            value={curFile}
+            value={currentSession}
             onChange={(e) => {
               updateVAP(e.target.value);
             }}
           >
-            {fileOptions}
+            {sessionSelection}
           </Select>
         </Container>
       </Flex>

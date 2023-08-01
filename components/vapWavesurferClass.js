@@ -154,11 +154,70 @@ const Controls = (props) => {
   );
 };
 
+const MinimalControls = (props) => {
+  let playBtns = (
+    <Flex border="1px" borderColor="grey" borderRadius={5} m="auto">
+      <SimpleGrid columns={1} rows={2} m={2}>
+        <Box m="auto">
+          <Button onClick={props.goStart}>
+            <Icon as={FaStepBackward} />
+          </Button>
+          <Button onClick={props.togglePlay}>
+            {!props.playing ? <Icon as={FaPlay} /> : <Icon as={FaPause} />}
+          </Button>
+          <Button onClick={props.goEnd}>
+            <Icon as={FaStepForward} />
+          </Button>
+        </Box>
+
+        <Box m="auto" p={2}>
+          <Text fontSize="10">
+            <strong>DATA:</strong> {props.dataURL}
+          </Text>
+          <Text fontSize="10">
+            <strong>AUDIO:</strong> {props.audioURL}
+          </Text>
+        </Box>
+      </SimpleGrid>
+    </Flex>
+  );
+
+  let topK = (
+    <SimpleGrid columns={2} border="1px" borderColor="white">
+      <Stack align="center" m={1} direction="column">
+        <RadioGroup onChange={props.setNTopk} value={props.nTopk.toString()}>
+          <Stack>
+            <Text fontSize="m"> Topk </Text>
+            <Radio value="0">Hide</Radio>
+            <Radio value="5">5</Radio>
+          </Stack>
+        </RadioGroup>
+      </Stack>
+    </SimpleGrid>
+  );
+
+  return (
+    <Box
+      m={2}
+      p={1}
+      border="1px"
+      borderColor="gray.20"
+      borderRadius={10}
+      align="center"
+    >
+      <SimpleGrid p={1} columns={3}>
+        <Box border="1px" />
+        {playBtns}
+        {topK}
+      </SimpleGrid>
+    </Box>
+  );
+};
+
 // Takes as input
 // audioURL: props.audioURL,
 // dataURL: props.dataURL,
 // filename: props.filename,
-
 class VAP extends React.Component {
   constructor(props) {
     super(props);
@@ -218,9 +277,6 @@ class VAP extends React.Component {
     const TimelinePlugin = (
       await import('wavesurfer.js/dist/plugin/wavesurfer.timeline.min.js')
     ).default;
-    /* const SpectrogramPlugin = ( */
-    /*   await import('wavesurfer.js/dist/plugin/wavesurfer.spectrogram.min.js') */
-    /* ).default; */
 
     if (!this.wavesurfer) {
       console.log('ID: ' + this.state.id.wavesurfer);
@@ -228,15 +284,6 @@ class VAP extends React.Component {
         ref: '#' + this.state.id.wavesurfer,
         height: this.state.dim.waveform,
       });
-
-      /* let spec = SpectrogramPlugin.create({ * /
-      /*   wavesurfer: wavesurfer, */
-      /*   container: '#' + this.state.id.spec, */
-      /*   frequencyMin: 50, */
-      /*   frequencyMax: 8000, */
-      /*   splitChannels: true, */
-      /*   height: 256, */
-      /* }); */
 
       options.plugins = [
         RegionPlugin.create(),
@@ -259,12 +306,14 @@ class VAP extends React.Component {
         throw response;
       })
       .then((data) => {
-        this.setState({
-          topk: data.topk,
-          topkP: data.topk_p,
-          topkCurrent: data.topk[0].slice(0, this.state.controls.nTopk),
-          topkPCurrent: data.topk_p[0].slice(0, this.state.controls.nTopk),
-        });
+        if (data.topk) {
+          this.setState({
+            topk: data.topk,
+            topkP: data.topk_p,
+            topkCurrent: data.topk[0].slice(0, this.state.controls.nTopk),
+            topkPCurrent: data.topk_p[0].slice(0, this.state.controls.nTopk),
+          });
+        }
         this.initVad(data.vad_list);
         this.initNextSpeakerProbs(data);
       });
@@ -364,6 +413,9 @@ class VAP extends React.Component {
   };
 
   setCurrentTopK = () => {
+    if (!this.state.topk) {
+      return;
+    }
     const r = this.wavesurfer.backend.getPlayedPercents();
     let idx = (r * this.state.topk.length).toFixed(0);
     this.setState({
@@ -448,36 +500,7 @@ class VAP extends React.Component {
           {pFuture}
         </Box>
 
-        <Controls
-          setShowPNow={() => {
-            this.setState({
-              controls: {
-                ...this.state.controls,
-                showPNow: !this.state.controls.showPNow,
-              },
-            });
-          }}
-          setShowPFuture={() => {
-            this.setState({
-              controls: {
-                ...this.state.controls,
-                showPFuture: !this.state.controls.showPFuture,
-              },
-            });
-          }}
-          setShowBC={() => {
-            alert('Toggle backchannel (BC) not yet implemented');
-            this.setState({
-              controls: {
-                ...this.state.controls,
-                showBC: !this.state.controls.showBC,
-              },
-            });
-          }}
-          // topK
-          audioURL={this.state.audioURL}
-          dataURL={this.state.dataURL}
-          filename={this.state.filename}
+        <MinimalControls
           maxTopk={this.state.controls.maxTopk}
           nTopk={this.state.controls.nTopk}
           setNTopk={(e) => {
@@ -495,6 +518,8 @@ class VAP extends React.Component {
             this.setCurrentTopK();
           }}
           // playBTNs
+          audioURL={this.state.audioURL}
+          dataURL={this.state.dataURL}
           playing={this.state.controls.playing}
           togglePlay={() => {
             this.setState({
@@ -512,9 +537,75 @@ class VAP extends React.Component {
             this.wavesurfer.seekAndCenter(1);
           }}
         />
+
         {topK}
       </Box>
     );
   }
 }
 export default VAP;
+
+/* <Controls */
+/*   setShowPNow={() => { */
+/*     this.setState({ */
+/*       controls: { */
+/*         ...this.state.controls, */
+/*         showPNow: !this.state.controls.showPNow, */
+/*       }, */
+/*     }); */
+/*   }} */
+/*   setShowPFuture={() => { */
+/*     this.setState({ */
+/*       controls: { */
+/*         ...this.state.controls, */
+/*         showPFuture: !this.state.controls.showPFuture, */
+/*       }, */
+/*     }); */
+/*   }} */
+/*   setShowBC={() => { */
+/*     alert('Toggle backchannel (BC) not yet implemented'); */
+/*     this.setState({ */
+/*       controls: { */
+/*         ...this.state.controls, */
+/*         showBC: !this.state.controls.showBC, */
+/*       }, */
+/*     }); */
+/*   }} */
+/*   // topK */
+/*   audioURL={this.state.audioURL} */
+/*   dataURL={this.state.dataURL} */
+/*   filename={this.state.filename} */
+/*   maxTopk={this.state.controls.maxTopk} */
+/*   nTopk={this.state.controls.nTopk} */
+/*   setNTopk={(e) => { */
+/*     let showTopk = false; */
+/*     if (e > 0) { */
+/*       showTopk = true; */
+/*     } */
+/*     this.setState({ */
+/*       controls: { */
+/*         ...this.state.controls, */
+/*         nTopk: e, */
+/*         showTopk: showTopk, */
+/*       }, */
+/*     }); */
+/*     this.setCurrentTopK(); */
+/*   }} */
+/*   // playBTNs */
+/*   playing={this.state.controls.playing} */
+/*   togglePlay={() => { */
+/*     this.setState({ */
+/*       controls: { */
+/*         ...this.state.controls, */
+/*         playing: !this.state.controls.playing, */
+/*       }, */
+/*     }); */
+/*     this.wavesurfer.playPause(); */
+/*   }} */
+/*   goStart={() => { */
+/*     this.wavesurfer.seekAndCenter(0); */
+/*   }} */
+/*   goEnd={() => { */
+/*     this.wavesurfer.seekAndCenter(1); */
+/*   }} */
+/* /> */
