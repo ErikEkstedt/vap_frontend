@@ -1,15 +1,8 @@
 import { useEffect, useState } from 'react';
-import VAP from '../components/vapWavesurferClass';
+import { Box, Container, Flex, Heading, Select } from '@chakra-ui/react';
 
-import { Box, Container, Flex, Heading } from '@chakra-ui/react';
-
-import { Button } from '@chakra-ui/react';
-import { Select } from '@chakra-ui/react';
-/* import { Menu, MenuButton, MenuList, MenuItem, Button } from '@chakra-ui/react'; */
-/* import { ChevronDownIcon } from '@chakra-ui/icons'; */
-
-/* const audioAPI = '/api/audio'; */
-/* const outputAPI = '/api/output'; */
+/* import VAP from '../components/vapWavesurferClass'; */
+import VAP from '../components/vapNew';
 
 // python backend
 // Reroute /api/python paths see next.config
@@ -20,9 +13,10 @@ export default function IndexPage() {
   const [sessionNames, setSessionNames] = useState([]); // list of session names
   const [sessionSelection, setSessionSelection] = useState([]); // list of <option> elements
   const [currentSession, setCurrentSession] = useState('');
-  const [urls, setURLS] = useState({});
+  const [urls, setURLS] = useState({ audioURL: '', dataURL: '' });
   const [vap, setVAP] = useState(null);
   const [maxTopk, setMaxTopK] = useState(10);
+  const [data, setData] = useState(null);
 
   // Possible files
   useEffect(() => {
@@ -54,26 +48,30 @@ export default function IndexPage() {
     };
   };
 
+  const fetchData = async (session) => {
+    const urlPaths = getURLs(session);
+    /* console.log('session: ', session); */
+    /* console.log('urlPaths: ', urlPaths); */
+
+    await fetch(urlPaths.dataURL)
+      .then((response) => {
+        if (response.ok) {
+          return response.json();
+        }
+        throw response;
+      })
+      .then((data) => {
+        setData(data);
+        setCurrentSession(session);
+        setURLS(urlPaths);
+      });
+  };
+
   const updateVAP = (session) => {
-    if (session === currentSession) {
-      return;
-    } else if (session === '') {
-      setVAP(null);
+    if (session === currentSession || session === '') {
       return;
     }
-
-    const paths = getURLs(session);
-    setCurrentSession(session);
-    setURLS(paths);
-    setVAP(
-      <VAP
-        audioURL={paths.audioURL}
-        dataURL={paths.dataURL}
-        filename={session}
-        maxTopk={maxTopk}
-        key={session}
-      />
-    );
+    fetchData(session);
   };
 
   return (
@@ -101,7 +99,9 @@ export default function IndexPage() {
           </Select>
         </Container>
       </Flex>
-      {vap}
+      {urls.audioURL && (
+        <VAP session={currentSession} audioURL={urls.audioURL} data={data} />
+      )}
     </Box>
   );
 }
