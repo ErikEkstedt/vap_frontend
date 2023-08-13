@@ -83,10 +83,11 @@ const WaveSurferPlayer = (props: WaveSurferPlayerProps) => {
   const wavesurfer = useWavesurfer(containerRef, props);
 
   const containerPnowRef = useRef();
-  // const wsPnow = useWavesurfer(containerPnowRef, {
-  //   height: 100,
-  //   peaks: props.p_now_a,
-  // });
+  const wsPnow = useWavesurfer(containerPnowRef, {
+    height: 100,
+    peaks: props.p_now_a,
+    media: wavesurfer.wavesurfer.getMediaElement(),
+  });
 
   const ids = {
     pnA: 'pnow-A',
@@ -135,62 +136,63 @@ const WaveSurferPlayer = (props: WaveSurferPlayerProps) => {
       });
     }
 
+    // if (props.p_now_a && props.p_now_b) {
+    // }
+
     // SET VAP-PROBS
-    let pp = null;
-    if (props.p_now_a && props.p_now_b) {
-      // const peaks = [props.p_now_a, props.p_now_b];
-      // console.log('peaks: ', props.p_now_a);
-
-      pp = VapProbsPlugin.create({
-        container: '#' + ids.vapProbs,
-        wavesurfer: wavesurfer,
-        probs: props.p_now,
-        height: props.height,
-        colors: [COLOR.A.waveColor, COLOR.B.waveColor],
-      });
-
-      const opt = { barWidth: 500 };
-      wavesurfer.registerPlugin(
-        ProbsPlugin.create({
-          container: '#' + ids.pnA,
-          probs: props.p_now_a,
-          waveColor: COLOR.A.waveColor,
-          progressColor: COLOR.A.progressColor,
-          height: props.height,
-          ...opt,
-        })
-      );
-      wavesurfer.registerPlugin(
-        ProbsPlugin.create({
-          container: '#' + ids.pnB,
-          probs: props.p_now_b,
-          waveColor: COLOR.B.waveColor,
-          progressColor: COLOR.B.progressColor,
-          height: props.height,
-          ...opt,
-        })
-      );
-      wavesurfer.registerPlugin(
-        ProbsPlugin.create({
-          container: '#' + ids.pfA,
-          probs: props.p_future_a,
-          waveColor: COLOR.A.waveColor,
-          progressColor: COLOR.A.progressColor,
-          height: props.height,
-          ...opt,
-        })
-      );
-      wavesurfer.registerPlugin(
-        ProbsPlugin.create({
-          container: '#' + ids.pfB,
-          probs: props.p_future_b,
-          waveColor: COLOR.B.waveColor,
-          progressColor: COLOR.B.progressColor,
-          height: props.height,
-          ...opt,
-        })
-      );
-    }
+    // let pp = null;
+    // if (props.p_now_a && props.p_now_b) {
+    //   // const peaks = [props.p_now_a, props.p_now_b];
+    //   // console.log('peaks: ', props.p_now_a);
+    //   pp = VapProbsPlugin.create({
+    //     container: '#' + ids.vapProbs,
+    //     wavesurfer: wavesurfer,
+    //     probs: props.p_now,
+    //     height: props.height,
+    //     colors: [COLOR.A.waveColor, COLOR.B.waveColor],
+    //   });
+    //   const opt = { barWidth: 500 };
+    //   wavesurfer.registerPlugin(
+    //     ProbsPlugin.create({
+    //       container: '#' + ids.pnA,
+    //       probs: props.p_now_a,
+    //       waveColor: COLOR.A.waveColor,
+    //       progressColor: COLOR.A.progressColor,
+    //       height: props.height,
+    //       ...opt,
+    //     })
+    //   );
+    //   wavesurfer.registerPlugin(
+    //     ProbsPlugin.create({
+    //       container: '#' + ids.pnB,
+    //       probs: props.p_now_b,
+    //       waveColor: COLOR.B.waveColor,
+    //       progressColor: COLOR.B.progressColor,
+    //       height: props.height,
+    //       ...opt,
+    //     })
+    //   );
+    //   wavesurfer.registerPlugin(
+    //     ProbsPlugin.create({
+    //       container: '#' + ids.pfA,
+    //       probs: props.p_future_a,
+    //       waveColor: COLOR.A.waveColor,
+    //       progressColor: COLOR.A.progressColor,
+    //       height: props.height,
+    //       ...opt,
+    //     })
+    //   );
+    //   wavesurfer.registerPlugin(
+    //     ProbsPlugin.create({
+    //       container: '#' + ids.pfB,
+    //       probs: props.p_future_b,
+    //       waveColor: COLOR.B.waveColor,
+    //       progressColor: COLOR.B.progressColor,
+    //       height: props.height,
+    //       ...opt,
+    //     })
+    //   );
+    // }
 
     const subscriptions = [
       wavesurfer.on('play', () => setIsPlaying(true)),
@@ -200,9 +202,9 @@ const WaveSurferPlayer = (props: WaveSurferPlayerProps) => {
 
     return () => {
       subscriptions.forEach((unsub) => unsub());
-      if (pp) {
-        pp.destroy();
-      }
+      // if (pp) {
+      //   pp.destroy();
+      // }
     };
   }, [wavesurfer]);
 
@@ -210,6 +212,7 @@ const WaveSurferPlayer = (props: WaveSurferPlayerProps) => {
     <Box m="auto">
       <div ref={containerRef} style={{ minHeight: '120px' }} />
       <Box border="1px" borderColor="black" mt={1} pt={1} pb={1}>
+        <div ref={containerPnowRef} style={{ minHeight: '120px' }} />
         <Box overflow="hidden" h={props.height / 2} id={ids.pnA} />
         <Box
           overflow="hidden"
@@ -245,6 +248,7 @@ const VAP = (props: VAPProps) => {
     <>
       <WaveSurferPlayer
         height={100}
+        minPxPerSec={50}
         url={props.audioURL}
         splitChannels={[
           {

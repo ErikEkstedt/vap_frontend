@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Box, Container, Flex, Heading, Select } from '@chakra-ui/react';
 
 /* import VAP from '../components/vapWavesurferClass'; */
-import VAP from '../components/vapNew';
+/* import VAP from '../components/vapNew'; */
+import VAP from '../components/vapSimple';
 
 // python backend
 // Reroute /api/python paths see next.config
@@ -38,6 +39,7 @@ export default function IndexPage() {
           );
         });
         setSessionSelection(options);
+        fetchData(sessions[0]);
       });
   }, []);
 
