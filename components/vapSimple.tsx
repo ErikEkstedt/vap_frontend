@@ -31,43 +31,14 @@ interface VAPProps {
 }
 
 // WaveSurfer hook
-const useWavesurfer = (containerRef, options) => {
-  const [wavesurfer, setWavesurfer] = useState(null);
-  const [data, setData] = useState(options.data ? options.data : null);
-
-  // Initialize wavesurfer when the container mounts
-  // or any of the props change
+const useWavesurfer = (containerRef: any, options: WaveSurferOptions) => {
+  const [wavesurfer, setWavesurfer] = useState<WaveSurfer>();
   useEffect(() => {
     if (!containerRef.current) return;
-
     const ws = WaveSurfer.create({
       ...options,
       container: containerRef.current,
-    });
-    setWavesurfer(ws);
-
-    return () => {
-      ws.destroy();
-    };
-  }, [options, containerRef]);
-
-  return wavesurfer;
-};
-
-const probsHook = (containerRef, media, peaks) => {
-  const [wavesurfer, setWavesurfer] = useState(null);
-  const [data, setData] = useState(options.data ? options.data : null);
-
-  // Initialize wavesurfer when the container mounts
-  // or any of the props change
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const ws = WaveSurfer.create({
-      container: containerRef.current,
-      media: media,
-      peaks: peaks,
-      fillParent: true,
+      normalize: true,
     });
     setWavesurfer(ws);
 
@@ -105,14 +76,18 @@ const WaveSurferPlayer = (props: any) => {
 
   // On play button click
   const onPlayClick = useCallback(() => {
+    if (!wavesurfer) return;
+
     wavesurfer.isPlaying() ? wavesurfer.pause() : wavesurfer.play();
   }, [wavesurfer]);
 
   const onStartClick = useCallback(() => {
+    if (!wavesurfer) return;
     wavesurfer.seekTo(0);
   }, [wavesurfer]);
 
   const onEndClick = useCallback(() => {
+    if (!wavesurfer) return;
     wavesurfer.seekTo(1);
   }, [wavesurfer]);
 
@@ -148,6 +123,7 @@ const WaveSurferPlayer = (props: any) => {
           fillParent: true,
           duration: audioData.duration,
           minPxPerSec: props.minPxPerSec,
+          normalize: false,
         };
         const wsPa = WaveSurfer.create({
           container: pRefna.current,
