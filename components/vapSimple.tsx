@@ -13,15 +13,15 @@ const COLOR = {
     waveColor: '#328DE1',
     futWaveColor: '#3233E1',
     progressColor: '#1C5080',
-    vad: '#328DE120',
+    vad: '#328DE120'
   },
   B: {
     waveColor: '#FDA230',
     futWaveColor: '#EC6417',
     progressColor: '#99621D',
-    vad: '#FFAD3420',
+    vad: '#FFAD3420'
   },
-  cursor: 'OrangeRed',
+  cursor: 'OrangeRed'
 };
 
 interface VAPProps {
@@ -38,7 +38,7 @@ const useWavesurfer = (containerRef: any, options: WaveSurferOptions) => {
     const ws = WaveSurfer.create({
       ...options,
       container: containerRef.current,
-      normalize: true,
+      normalize: true
     });
     setWavesurfer(ws);
 
@@ -91,6 +91,13 @@ const WaveSurferPlayer = (props: any) => {
     wavesurfer.seekTo(1);
   }, [wavesurfer]);
 
+  const setTopk = (currentTime: number) => {
+    // Update topk
+    const ratio = currentTime / duration;
+    const idx = Number((ratio * props.data.topk.length).toFixed(0));
+    setTopkCurrent(props.data.topk[idx]);
+    setTopkPCurrent(props.data.topk_p[idx]);
+  };
   // Initialize wavesurfer when the container mounts
   // or any of the props change
   useEffect(() => {
@@ -102,16 +109,15 @@ const WaveSurferPlayer = (props: any) => {
     const subscriptions = [
       wavesurfer.on('play', () => setIsPlaying(true)),
       wavesurfer.on('pause', () => setIsPlaying(false)),
+      wavesurfer.on('seeking', (currentTime: number) => {
+        setTopk(currentTime);
+      }),
       wavesurfer.on('audioprocess', (currentTime: number) => {
         setCurrentTime(currentTime);
         if (duration <= 0) {
           return;
         }
-        // Update topk
-        const ratio = currentTime / duration;
-        const idx = Number((ratio * props.data.topk.length).toFixed(0));
-        setTopkCurrent(props.data.topk[idx]);
-        setTopkPCurrent(props.data.topk_p[idx]);
+        setTopk(currentTime);
       }),
       wavesurfer.on('decode', () => {
         const audioData = wavesurfer.getDecodedData();
@@ -123,31 +129,31 @@ const WaveSurferPlayer = (props: any) => {
           fillParent: true,
           duration: audioData.duration,
           minPxPerSec: props.minPxPerSec,
-          normalize: false,
+          normalize: false
         };
         const wsPa = WaveSurfer.create({
           container: pRefna.current,
           peaks: props.data.p_now_a,
           waveColor: COLOR.A.waveColor,
-          ...options,
+          ...options
         });
         const wsPb = WaveSurfer.create({
           container: pRefnb.current,
           peaks: props.data.p_now_b,
           waveColor: COLOR.B.waveColor,
-          ...options,
+          ...options
         });
         const wsPfa = WaveSurfer.create({
           container: pReffa.current,
           peaks: props.data.p_future_a,
           waveColor: COLOR.A.futWaveColor,
-          ...options,
+          ...options
         });
         const wsPfb = WaveSurfer.create({
           container: pReffb.current,
           peaks: props.data.p_future_b,
           waveColor: COLOR.B.futWaveColor,
-          ...options,
+          ...options
         });
         setPna(wsPa);
         setPnb(wsPb);
@@ -159,11 +165,12 @@ const WaveSurferPlayer = (props: any) => {
           wsPfa.destroy();
           wsPfb.destroy();
         });
-      }),
+        setTopk(0);
+      })
     ];
 
     return () => {
-      subscriptions.forEach((unsub) => unsub());
+      subscriptions.forEach(unsub => unsub());
     };
   }, [wavesurfer, topkCurrent, topkPCurrent, props]);
 
@@ -176,7 +183,7 @@ const WaveSurferPlayer = (props: any) => {
           style={{
             minHeight: '20px',
             overflow: 'hidden',
-            height: props.height / 2,
+            height: props.height / 2
           }}
         />
         <div
@@ -185,7 +192,7 @@ const WaveSurferPlayer = (props: any) => {
             minHeight: '20px',
             overflow: 'hidden',
             transform: 'scaleY(-1)',
-            height: props.height / 2,
+            height: props.height / 2
           }}
         />
       </Box>
@@ -195,7 +202,7 @@ const WaveSurferPlayer = (props: any) => {
           style={{
             minHeight: '20px',
             overflow: 'hidden',
-            height: props.height / 2,
+            height: props.height / 2
           }}
         />
         <div
@@ -204,10 +211,11 @@ const WaveSurferPlayer = (props: any) => {
             minHeight: '20px',
             overflow: 'hidden',
             transform: 'scaleY(-1)',
-            height: props.height / 2,
+            height: props.height / 2
           }}
         />
       </Box>
+      <Topk topk={topkCurrent} topkP={topkPCurrent} />
       <Box>
         <Button onClick={onStartClick}>
           <Icon as={FaStepBackward} />
@@ -220,9 +228,6 @@ const WaveSurferPlayer = (props: any) => {
         </Button>
         <p>Seconds played: {currentTime}</p>
       </Box>
-      <Box border="1px" borderColor="black">
-        <Topk topk={topkCurrent} topkP={topkPCurrent} />
-      </Box>
     </Box>
   );
 };
@@ -234,19 +239,19 @@ const VAP = (props: VAPProps) => {
   return (
     <>
       <WaveSurferPlayer
-        height={100}
+        height={80}
         minPxPerSec={50}
         hideScrollbar={true}
         url={props.audioURL}
         splitChannels={[
           {
             waveColor: COLOR.A.waveColor,
-            progressColor: COLOR.A.progressColor,
+            progressColor: COLOR.A.progressColor
           },
           {
             waveColor: COLOR.B.waveColor,
-            progressColor: COLOR.B.progressColor,
-          },
+            progressColor: COLOR.B.progressColor
+          }
         ]}
         plugins={[Timeline.create()]}
         data={props.data ? props.data : {}}

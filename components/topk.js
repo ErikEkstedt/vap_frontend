@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
+  CartesianGrid
 } from 'recharts';
 import { idx2oh } from './idxToOnehot.js';
 
@@ -29,7 +29,7 @@ const topkProbsChart = (topk, topkP, height) => {
   for (let ii = 0; ii < topk.length; ii++) {
     data.push({
       name: topk[ii].toString(),
-      y: Number((topkP[ii] * 100).toFixed(1)),
+      y: Number((topkP[ii] * 100).toFixed(1))
     });
   }
 
@@ -54,7 +54,7 @@ const topkSampleChart = (oneHot, key, h = 50, m = 2) => {
       data.push({
         x: Number(step[ii]),
         a: oneHot[0][ii],
-        b: -oneHot[1][ii],
+        b: -oneHot[1][ii]
       });
     }
   }
@@ -107,29 +107,29 @@ const TopkWindowCharts = (topk, height, margin = 2) => {
 };
 
 export default function Topk(props) {
-  const chartH = 50;
+  const chartH = 40;
   const chartHeight = props.topk
     ? (props.topk.length + 1) * chartH
     : chartH * 10;
 
+  if (!props.topk) {
+    return <div></div>;
+  }
   let topkProbs = topkProbsChart(props.topk, props.topkP, chartHeight);
   let topkProjWin = TopkWindowCharts(props.topk, chartH);
 
   return (
     <SimpleGrid
-      borderRadius={10}
-      m={2}
-      p={2}
+      borderRadius={5}
+      m={1}
+      p={1}
       columns={2}
       spacing={5}
       bg="white"
+      minHeight="100px"
     >
-      <Box p={2} height={`${chartHeight}px`}>
-        {topkProbs}
-      </Box>
-      <Box p={2} height={`${chartHeight}px`}>
-        {topkProjWin}
-      </Box>
+      <Box height={`${chartHeight}px`}>{topkProbs}</Box>
+      <Box height={`${chartHeight}px`}>{topkProjWin}</Box>
     </SimpleGrid>
   );
 }
