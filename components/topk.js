@@ -10,7 +10,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid
+  CartesianGrid,
 } from 'recharts';
 import { idx2oh } from './idxToOnehot.js';
 
@@ -29,7 +29,7 @@ const topkProbsChart = (topk, topkP, height) => {
   for (let ii = 0; ii < topk.length; ii++) {
     data.push({
       name: topk[ii].toString(),
-      y: Number((topkP[ii] * 100).toFixed(1))
+      y: Number((topkP[ii] * 100).toFixed(1)),
     });
   }
 
@@ -54,7 +54,7 @@ const topkSampleChart = (oneHot, key, h = 50, m = 2) => {
       data.push({
         x: Number(step[ii]),
         a: oneHot[0][ii],
-        b: -oneHot[1][ii]
+        b: -oneHot[1][ii],
       });
     }
   }
@@ -127,6 +127,7 @@ export default function Topk(props) {
       spacing={5}
       bg="white"
       minHeight="100px"
+      width="1000px"
     >
       <Box height={`${chartHeight}px`}>{topkProbs}</Box>
       <Box height={`${chartHeight}px`}>{topkProjWin}</Box>
