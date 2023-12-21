@@ -19,57 +19,73 @@ export default function IndexPage() {
   const [maxTopk, setMaxTopK] = useState(10);
   const [data, setData] = useState(null);
 
-  // Possible files
-  useEffect(() => {
+  const fetchFiles = () => {
     fetch('/api/python/files')
-      .then((response) => {
+      .then(response => {
         if (response.ok) {
           return response.json();
         }
         throw response;
       })
-      .then((sessions) => {
-        setSessionNames(sessions);
-        let options = [];
-        sessions.forEach((file) => {
-          options.push(
+      .then(sessions => {
+        // Sort the sessions
+        const sortedSessions = [...sessions].sort((a, b) => a.localeCompare(b));
+
+        // Only update the state if the sessions have changed
+        if (JSON.stringify(sortedSessions) !== JSON.stringify(sessionNames)) {
+          setSessionNames(sortedSessions);
+          let options = sortedSessions.map(file => (
             <option value={file} key={file}>
               {file}
             </option>
-          );
-        });
-        setSessionSelection(options);
-        fetchData(sessions[0]);
+          ));
+          setSessionSelection(options);
+          // Removed the logic that sets the currentSession to the first item in sessions
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching files:', error);
       });
-  }, []);
+  };
 
-  const getURLs = (session) => {
+  useEffect(() => {
+    // Fetch immediately once
+    fetchFiles();
+
+    // Set an interval to fetch every couple of seconds (e.g., every 2 seconds)
+    const intervalId = setInterval(fetchFiles, 2000);
+
+    // Clear the interval when the component is unmounted
+    return () => clearInterval(intervalId);
+  }, [currentSession, sessionNames]); // Add currentSession and sessionNames to dependency array
+
+  const getURLs = session => {
     return {
       audioURL: audioAPI + '?filename=' + session + '-topk=' + maxTopk,
-      dataURL: outputAPI + '?filename=' + session + '-topk=' + maxTopk,
+      dataURL: outputAPI + '?filename=' + session + '-topk=' + maxTopk
     };
   };
 
-  const fetchData = async (session) => {
+  const fetchData = async session => {
     const urlPaths = getURLs(session);
     /* console.log('session: ', session); */
     /* console.log('urlPaths: ', urlPaths); */
 
     await fetch(urlPaths.dataURL)
-      .then((response) => {
+      .then(response => {
         if (response.ok) {
           return response.json();
         }
         throw response;
       })
-      .then((data) => {
+      .then(data => {
         setData(data);
         setCurrentSession(session);
         setURLS(urlPaths);
       });
   };
 
-  const updateVAP = (session) => {
+  const updateVAP = session => {
     if (session === currentSession || session === '') {
       return;
     }
@@ -93,7 +109,7 @@ export default function IndexPage() {
           </Flex>
           <Select
             value={currentSession}
-            onChange={(e) => {
+            onChange={e => {
               updateVAP(e.target.value);
             }}
           >
